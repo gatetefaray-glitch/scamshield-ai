@@ -1,1 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
 
+# React / Node
+node_modules/
+dist/
+build/
+
+# Environment variables
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# Database
+*.db
