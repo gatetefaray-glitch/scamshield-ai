@@ -19,3 +19,6 @@ build/
 
 # Database
 *.db
+
+# Local backup files
+*.backup
