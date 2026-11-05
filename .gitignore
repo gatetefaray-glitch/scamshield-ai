@@ -22,3 +22,7 @@ build/
 
 # Local backup files
 *.backup
+
+# Python virtual environments
+.venv/
+**/.venv/
