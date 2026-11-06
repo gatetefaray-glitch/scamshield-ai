@@ -1,4 +1,5 @@
-import unittest
+﻿import unittest
+from unittest.mock import patch
 
 from scamshield import create_app
 
@@ -6,6 +7,13 @@ from scamshield import create_app
 class ScamShieldAPITests(unittest.TestCase):
 
     def setUp(self):
+        self.ollama_patcher = patch(
+            "scamshield.services.analysis_service.OllamaService.analyze",
+            return_value=None
+        )
+        self.mock_ollama = self.ollama_patcher.start()
+        self.addCleanup(self.ollama_patcher.stop)
+
         self.app = create_app()
         self.client = self.app.test_client()
 
@@ -21,6 +29,7 @@ class ScamShieldAPITests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["risk"], "LOW")
+        self.assertEqual(response.json["analysis_mode"], "rule_based")
 
     def test_suspicious_url(self):
         response = self.client.post(
@@ -50,6 +59,7 @@ class ScamShieldAPITests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["risk"], "HIGH")
+        self.assertEqual(response.json["analysis_mode"], "rule_based")
 
     def test_normal_message(self):
         response = self.client.post(
@@ -58,6 +68,7 @@ class ScamShieldAPITests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["risk"], "LOW")
+        self.assertEqual(response.json["analysis_mode"], "rule_based")
 
     def test_missing_message_field(self):
         response = self.client.post(
