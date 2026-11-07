@@ -13,8 +13,8 @@ SUSPICIOUS_MESSAGE_PATTERNS = [
         r"\b(urgent|immediately|act now|final warning)\b",
         "Urgency or pressure language"
     ),
-    (
-        r"\b(verify your account|account suspended|account locked)\b",
+         (
+        r"\b(verify your account|account\s+(?:(?:is|has been)\s+)?(?:suspended|locked))\b",
         "Account verification or suspension claim"
     ),
     (
