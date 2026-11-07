@@ -1,5 +1,4 @@
-﻿ 
-import unittest
+﻿import unittest
 
 from scamshield.engines.url_engine import analyze_url
 from scamshield.engines.message_engine import analyze_message
