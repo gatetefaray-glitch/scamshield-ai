@@ -12,6 +12,18 @@ from scamshield.engines.risk_engine import (
 
 class URLDetectionTests(unittest.TestCase):
 
+    def test_ip_address_with_trailing_dot(self):
+        result, error = analyze_url(
+            "https://127.0.0.1."
+        )
+
+        self.assertIsNone(error)
+        self.assertIn(
+            "URL uses an IP address instead of a domain",
+            result["warnings"]
+        )
+        self.assertEqual(result["risk_score"], 25)
+
     def test_normal_https_url(self):
         result, error = analyze_url("https://example.com")
         self.assertIsNone(error)
@@ -43,6 +55,28 @@ class URLDetectionTests(unittest.TestCase):
         result, error = analyze_url("javascript:alert(1)")
         self.assertIsNone(result)
         self.assertIsNotNone(error)
+
+    def test_internationalized_hostname(self):
+        result, error = analyze_url(
+            "https://xn--bcher-kva.example"
+        )
+
+        self.assertIsNone(error)
+        self.assertIn(
+            "Hostname uses internationalized domain encoding",
+            result["warnings"]
+        )
+
+    def test_unicode_hostname(self):
+        result, error = analyze_url(
+            "https://bücher.example"
+        )
+
+        self.assertIsNone(error)
+        self.assertIn(
+            "Hostname uses internationalized domain encoding",
+            result["warnings"]
+        )
 
 
 class MessageDetectionTests(unittest.TestCase):
@@ -118,4 +152,3 @@ class RiskScoringTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

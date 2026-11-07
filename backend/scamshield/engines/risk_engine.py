@@ -12,6 +12,7 @@ URL_INDICATOR_WEIGHTS = {
     "URL uses an IP address instead of a domain": 25,
     "URL uses a URL-shortening service": 15,
     "URL path contains a sensitive-action keyword": 10,
+    "Hostname uses internationalized domain encoding": 15,
 }
 
 MESSAGE_INDICATOR_WEIGHTS = {
