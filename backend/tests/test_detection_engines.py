@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 
 from scamshield.engines.url_engine import analyze_url
 from scamshield.engines.message_engine import analyze_message
@@ -89,12 +89,45 @@ class MessageDetectionTests(unittest.TestCase):
         self.assertEqual(result["risk"], "LOW")
         self.assertEqual(result["risk_score"], 0)
 
+
     def test_urgent_message(self):
         result, error = analyze_message(
             "URGENT! Act now to avoid account suspension."
         )
         self.assertIsNone(error)
-        self.assertIn("Urgency or pressure language", result["indicators"])
+        self.assertIn(
+            "Urgency or pressure language",
+            result["indicators"]
+        )
+
+    def test_urgency_and_account_suspension_combination(self):
+        result, error = analyze_message(
+            "URGENT: Your account has been suspended. "
+            "Please verify your account immediately."
+        )
+
+        self.assertIsNone(error)
+        self.assertEqual(result["risk_score"], 30)
+        self.assertEqual(result["risk"], "MEDIUM")
+
+    def test_urgency_alone_does_not_receive_combination_bonus(self):
+        result, error = analyze_message(
+            "URGENT: Please review this announcement."
+        )
+
+        self.assertIsNone(error)
+        self.assertEqual(result["risk_score"], 10)
+        self.assertEqual(result["risk"], "LOW")
+
+    def test_account_suspension_alone_does_not_receive_bonus(self):
+        result, error = analyze_message(
+            "Your account has been suspended."
+        )
+
+        self.assertIsNone(error)
+        self.assertEqual(result["risk_score"], 15)
+        self.assertEqual(result["risk"], "LOW")
+
 
     def test_credential_request(self):
         result, error = analyze_message(

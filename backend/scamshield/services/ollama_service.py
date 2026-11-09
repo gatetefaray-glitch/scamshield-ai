@@ -1,7 +1,12 @@
+import json
+import logging
 
 import requests
 
 from scamshield.config import Config
+
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaService:
@@ -13,6 +18,8 @@ class OllamaService:
 
         Returns structured AI findings or None when unavailable.
         The deterministic detection engine remains authoritative.
+
+        Submitted content and exception details are never logged.
         """
 
         if content_type not in ("message", "url"):
@@ -71,12 +78,14 @@ CONTENT:
             response.raise_for_status()
 
             result = response.json()
+
+            if not isinstance(result, dict):
+                return None
+
             ai_response = result.get("response")
 
             if not isinstance(ai_response, str):
                 return None
-
-            import json
 
             data = json.loads(ai_response)
 
@@ -133,4 +142,8 @@ CONTENT:
             TypeError,
             KeyError
         ):
+            # Do not log submitted content or exception details.
+            logger.warning(
+                "Local AI analysis unavailable; using rule-based fallback."
+            )
             return None

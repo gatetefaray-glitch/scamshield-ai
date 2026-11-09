@@ -1,9 +1,13 @@
-﻿import os
+import os
 
 
 class Config:
     MAX_URL_LENGTH = 2048
     MAX_MESSAGE_LENGTH = 10000
+
+    # Maximum HTTP request body size: 64 KB
+    MAX_CONTENT_LENGTH = 64 * 1024
+
     JSON_SORT_KEYS = False
 
     FRONTEND_ORIGIN = os.getenv(

@@ -1,4 +1,5 @@
-﻿import re
+
+import re
 
 from scamshield.config import Config
 from scamshield.engines.risk_engine import (
@@ -8,13 +9,15 @@ from scamshield.engines.risk_engine import (
 )
 
 
+
 SUSPICIOUS_MESSAGE_PATTERNS = [
     (
         r"\b(urgent|immediately|act now|final warning)\b",
         "Urgency or pressure language"
     ),
-         (
-        r"\b(verify your account|account\s+(?:(?:is|has been)\s+)?(?:suspended|locked))\b",
+    (
+        r"\b(verify your account|account\s+(?:(?:is|has been)\s+)?(?:suspended|locked))"
+        r"|\b(?:profile|account)\s+(?:will be|may be|is being)\s+(?:disabled|deactivated|restricted)\b",
         "Account verification or suspension claim"
     ),
     (
@@ -22,11 +25,14 @@ SUSPICIOUS_MESSAGE_PATTERNS = [
         "Unexpected reward claim"
     ),
     (
-        r"\b(send money|transfer funds|payment required)\b",
+        r"\b(send money|transfer (?:funds|the amount)|payment required)\b",
         "Financial request"
     ),
     (
-        r"\b(password|otp|one[- ]time password|verification code)\b",
+        r"(?<!not )(?<!never )(?<!don't )"
+        r"\b(?:send|share|provide|enter|submit|give)\s+"
+        r"(?:(?:us|me)\s+)?(?:your\s+)?"
+        r"(?:password|passcode|otp|one[- ]time password|verification code)\b",
         "Sensitive credential reference"
     ),
     (
@@ -34,6 +40,11 @@ SUSPICIOUS_MESSAGE_PATTERNS = [
         "Encouragement to click a link"
     ),
 ]
+
+
+# Provisional contextual bonus:
+# urgency combined with an account verification or suspension claim.
+ACCOUNT_PRESSURE_COMBINATION_BONUS = 5
 
 
 def analyze_message(value):
@@ -55,6 +66,17 @@ def analyze_message(value):
         indicators,
         MESSAGE_INDICATOR_WEIGHTS
     )
+
+    # Apply a small contextual bonus when urgency and
+    # an account verification or suspension claim coexist.
+    if (
+        "Urgency or pressure language" in indicators
+        and "Account verification or suspension claim" in indicators
+    ):
+        risk_score = min(
+            risk_score + ACCOUNT_PRESSURE_COMBINATION_BONUS,
+            100
+        )
 
     return {
         "risk": classify_risk(risk_score),

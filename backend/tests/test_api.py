@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from unittest.mock import patch
 
 from scamshield import create_app
@@ -76,6 +76,39 @@ class ScamShieldAPITests(unittest.TestCase):
             json={"text": "Hello there"}
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_oversized_request_returns_413(self):
+        response = self.client.post(
+            "/api/analyze-message",
+            data=b"x" * 65537,
+            content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(
+            response.json["error"],
+            "Request body exceeds the 64 KB limit"
+        )
+
+    def test_unexpected_exception_returns_generic_error(self):
+        with patch(
+            "scamshield.services.analysis_service.AnalysisService.analyze_message",
+            side_effect=RuntimeError("Internal database connection details")
+        ):
+            response = self.client.post(
+                "/api/analyze-message",
+                json={"message": "Hello, how are you?"}
+            )
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(
+            response.json,
+            {"error": "Internal server error"}
+        )
+        self.assertNotIn(
+            "database connection details",
+            response.get_data(as_text=True).lower()
+        )
 
 
 if __name__ == "__main__":

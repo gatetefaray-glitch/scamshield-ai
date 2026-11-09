@@ -1,4 +1,5 @@
- import React, { useState } from 'react';
+
+import React, { useState } from 'react';
 
 // Supports local development and production backend URLs.
 const API_BASE_URL = (
@@ -33,6 +34,112 @@ async function sendAnalysisRequest(endpoint, payload) {
   }
 
   return data;
+}
+
+// Risk colour helper.
+function riskColor(risk) {
+  if (risk === 'HIGH') return '#dc2626';
+  if (risk === 'MEDIUM') return '#d97706';
+  if (risk === 'LOW') return '#16a34a';
+  return '#374151';
+}
+
+// Displays supplementary AI findings separately from rule-based risk.
+function AIAnalysis({ result }) {
+  if (!result) return null;
+
+  const ai = result.ai_analysis;
+
+  return (
+    <div style={{
+      marginTop: '1.2rem',
+      padding: '1rem',
+      background: '#eef2ff',
+      border: '1px solid #c7d2fe',
+      borderRadius: '10px'
+    }}>
+      <h3 style={{ marginTop: 0, color: '#3730a3' }}>
+        AI Contextual Assessment
+      </h3>
+
+      <p>
+        <strong>Analysis Mode: </strong>
+        {result.analysis_mode === 'hybrid'
+          ? 'Hybrid (Rule-based + AI)'
+          : 'Rule-based fallback'}
+      </p>
+
+      {!ai ? (
+        <p style={{ color: '#4b5563' }}>
+          AI analysis is currently unavailable.
+          The deterministic rule-based assessment is still available.
+        </p>
+      ) : (
+        <>
+          <p>
+            <strong>AI Assessment: </strong>
+            <span style={{
+              color: ai.suspicious ? '#dc2626' : '#15803d',
+              fontWeight: 'bold'
+            }}>
+              {ai.suspicious
+                ? 'Suspicious indicators detected'
+                : 'No suspicious indicators identified by AI'}
+            </span>
+          </p>
+
+          <p>
+            <strong>AI Confidence: </strong>
+            {ai.confidence}%
+          </p>
+
+          <p style={{ fontSize: '0.85rem', color: '#4b5563' }}>
+            This is the AI model's confidence score, not a probability
+            that the message or URL is fraudulent.
+          </p>
+
+          {ai.indicators?.length > 0 && (
+            <>
+              <strong>Additional AI Observations:</strong>
+              <ul>
+                {ai.indicators.map((indicator, index) => (
+                  <li key={index}>{indicator}</li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {ai.explanation && (
+            <div style={{ marginTop: '1rem' }}>
+              <strong>AI Explanation:</strong>
+              <p>{ai.explanation}</p>
+            </div>
+          )}
+
+          {ai.recommendation && (
+            <div style={{
+              marginTop: '1rem',
+              padding: '0.8rem',
+              background: '#ffffff',
+              borderRadius: '8px'
+            }}>
+              <strong>Recommended Action:</strong>
+              <p>{ai.recommendation}</p>
+            </div>
+          )}
+        </>
+      )}
+
+      <p style={{
+        fontSize: '0.85rem',
+        color: '#4b5563',
+        marginBottom: 0
+      }}>
+        AI findings are supplementary. The deterministic risk score
+        remains the authoritative screening result.
+      </p>
+    </div>
+  );
 }
 
 function App() {
@@ -85,13 +192,6 @@ function App() {
     }
   };
 
-  const riskColor = (risk) => {
-    if (risk === 'HIGH') return '#dc2626';
-    if (risk === 'MEDIUM') return '#d97706';
-    if (risk === 'LOW') return '#16a34a';
-    return '#374151';
-  };
-
   return (
     <main style={{
       padding: '2rem',
@@ -101,10 +201,13 @@ function App() {
       color: '#1f2937'
     }}>
       <header style={{ marginBottom: '2rem' }}>
-        <h1>ScamShield AI 🛡️</h1>
-        <p>Analyze links and text messages for potential security risks.</p>
+        <h1>ScamShield AI</h1>
+        <p>
+          Analyze links and text messages for potential security risks.
+        </p>
       </header>
 
+      {/* URL Analysis */}
       <section style={{
         marginBottom: '2rem',
         border: '1px solid #d1d5db',
@@ -146,16 +249,25 @@ function App() {
               <p style={{ color: '#dc2626' }}>{urlResult.error}</p>
             ) : (
               <>
+                <h3>Deterministic Security Assessment</h3>
+
                 <p>
                   <strong>Risk Level: </strong>
-                  <strong style={{ color: riskColor(urlResult.risk) }}>
+                  <strong style={{
+                    color: riskColor(urlResult.risk)
+                  }}>
                     {urlResult.risk}
                   </strong>
                 </p>
 
+                <p>
+                  <strong>Risk Score: </strong>
+                  {urlResult.risk_score}/100
+                </p>
+
                 {urlResult.warnings?.length > 0 ? (
                   <>
-                    <strong>Warnings:</strong>
+                    <strong>Flagged Indicators:</strong>
                     <ul>
                       {urlResult.warnings.map((warning, index) => (
                         <li key={index}>{warning}</li>
@@ -167,12 +279,15 @@ function App() {
                 )}
 
                 <p><em>{urlResult.notice}</em></p>
+
+                <AIAnalysis result={urlResult} />
               </>
             )}
           </div>
         )}
       </section>
 
+      {/* Message Analysis */}
       <section style={{
         border: '1px solid #d1d5db',
         padding: '1.5rem',
@@ -209,14 +324,25 @@ function App() {
             borderRadius: '8px'
           }}>
             {messageResult.error ? (
-              <p style={{ color: '#dc2626' }}>{messageResult.error}</p>
+              <p style={{ color: '#dc2626' }}>
+                {messageResult.error}
+              </p>
             ) : (
               <>
+                <h3>Deterministic Security Assessment</h3>
+
                 <p>
                   <strong>Risk Level: </strong>
-                  <strong style={{ color: riskColor(messageResult.risk) }}>
+                  <strong style={{
+                    color: riskColor(messageResult.risk)
+                  }}>
                     {messageResult.risk}
                   </strong>
+                </p>
+
+                <p>
+                  <strong>Risk Score: </strong>
+                  {messageResult.risk_score}/100
                 </p>
 
                 {messageResult.indicators?.length > 0 ? (
@@ -233,6 +359,8 @@ function App() {
                 )}
 
                 <p><em>{messageResult.notice}</em></p>
+
+                <AIAnalysis result={messageResult} />
               </>
             )}
           </div>
