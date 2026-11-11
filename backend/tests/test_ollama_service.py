@@ -1,4 +1,3 @@
-
 import json
 import unittest
 from unittest.mock import Mock, patch
@@ -19,13 +18,20 @@ class OllamaServiceTests(unittest.TestCase):
             "recommendation": "Verify independently."
         }
 
+    def make_streaming_response(self, payload):
+        mock_response = Mock()
+        mock_response.__enter__ = Mock(return_value=mock_response)
+        mock_response.__exit__ = Mock(return_value=False)
+        mock_response.iter_content.return_value = [
+            json.dumps(payload).encode("utf-8")
+        ]
+        return mock_response
+
     @patch("scamshield.services.ollama_service.requests.post")
     def test_successful_ai_analysis(self, mock_post):
-        mock_response = Mock()
-        mock_response.json.return_value = {
+        mock_post.return_value = self.make_streaming_response({
             "response": json.dumps(self.valid_ai_result)
-        }
-        mock_post.return_value = mock_response
+        })
 
         result = OllamaService.analyze(
             "Urgent! Verify your account.",
@@ -69,11 +75,9 @@ class OllamaServiceTests(unittest.TestCase):
 
     @patch("scamshield.services.ollama_service.requests.post")
     def test_invalid_ai_json_returns_none(self, mock_post):
-        mock_response = Mock()
-        mock_response.json.return_value = {
+        mock_post.return_value = self.make_streaming_response({
             "response": "This is not valid JSON"
-        }
-        mock_post.return_value = mock_response
+        })
 
         result = OllamaService.analyze(
             "Test message",
@@ -84,9 +88,9 @@ class OllamaServiceTests(unittest.TestCase):
 
     @patch("scamshield.services.ollama_service.requests.post")
     def test_unexpected_response_format_returns_none(self, mock_post):
-        mock_response = Mock()
-        mock_response.json.return_value = ["unexpected", "response"]
-        mock_post.return_value = mock_response
+        mock_post.return_value = self.make_streaming_response(
+            ["unexpected", "response"]
+        )
 
         result = OllamaService.analyze(
             "Test message",
@@ -100,11 +104,9 @@ class OllamaServiceTests(unittest.TestCase):
         invalid_result = self.valid_ai_result.copy()
         invalid_result["confidence"] = 150
 
-        mock_response = Mock()
-        mock_response.json.return_value = {
+        mock_post.return_value = self.make_streaming_response({
             "response": json.dumps(invalid_result)
-        }
-        mock_post.return_value = mock_response
+        })
 
         result = OllamaService.analyze(
             "Test message",
